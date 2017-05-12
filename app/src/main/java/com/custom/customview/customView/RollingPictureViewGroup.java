@@ -25,7 +25,7 @@ public class RollingPictureViewGroup extends ViewGroup {
     private Camera mCamera;
     private Scroller mScroller;
     private VelocityTracker mVelocityTracker;
-    private int mLastY=0;
+    private int mLastY = 0;
     private float standard_speed = 2000;
 
     public RollingPictureViewGroup(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -83,6 +83,7 @@ public class RollingPictureViewGroup extends ViewGroup {
         setMeasuredDimension(widthMode == MeasureSpec.EXACTLY ? widthSize : width, heightMode == MeasureSpec.EXACTLY ? heightSize : height);
         mHeight = getMeasuredHeight();
 
+
     }
 
     //各个子控件从上到下依次排列，而整个控件大小是一定的，界面上也就只显示一个子控件，在整个控件滚动的时候形成界面切换效果。//
@@ -114,7 +115,7 @@ public class RollingPictureViewGroup extends ViewGroup {
      */
     @Override
     protected void dispatchDraw(Canvas canvas) {
-       // super.dispatchDraw(canvas);
+        // super.dispatchDraw(canvas);
         for (int i = 0; i < getChildCount(); i++) {
             drawView(canvas, i, getDrawingTime());
         }
@@ -176,18 +177,20 @@ public class RollingPictureViewGroup extends ViewGroup {
             case MotionEvent.ACTION_MOVE:
                 int distY = mLastY - y;
                 mLastY = y;
-                moveY(distY);
+                if (mScroller.isFinished()) {
+                    moveY(distY);
+                }
                 break;
             case MotionEvent.ACTION_UP:
                 mVelocityTracker.computeCurrentVelocity(1000);
                 float velocityTrackerY = mVelocityTracker.getYVelocity();
                 int startY;
                 //下滑速度大于standard_speed，或者下滑时，顶部页面的高度超过1/2
-                if (velocityTrackerY > standard_speed || (getScaleY() + mHeight / 2) / mHeight < mStartScreen) {
+                if (velocityTrackerY > standard_speed || (getScrollY() + mHeight / 2) / mHeight < mStartScreen) {
                     startY = getScrollY() + mHeight;
                     setPrePage();
                     //上滑速度小于-standard_speed，或者上滑时，底部页面的高度超过1/2
-                } else if (velocityTrackerY < -standard_speed || (getScaleY() + mHeight / 2) / mHeight > mStartScreen) {
+                } else if (velocityTrackerY < -standard_speed || (getScrollY() + mHeight / 2) / mHeight > mStartScreen) {
                     startY = getScrollY() - mHeight;
                     setNextPage();
                 } else {
@@ -196,12 +199,15 @@ public class RollingPictureViewGroup extends ViewGroup {
                 }
                 int distanceY = mStartScreen * mHeight - startY;
                 smoothScroll(0, startY, 0, distanceY, 500);
+
                 break;
         }
         return true;
     }
 
     private void moveY(int distY) {
+
+        scrollBy(0, distY);
         //初始化下滑，View没有设置切换，会显示空白
         if (getScrollY() < 8) {
             setPrePage();
@@ -210,13 +216,14 @@ public class RollingPictureViewGroup extends ViewGroup {
             setNextPage();
             scrollBy(0, -mHeight);
         }
-        scrollBy(0, distY);
+
     }
 
     private void setNextPage() {
+        int childCount = getChildCount();
         View view = getChildAt(0);
         removeView(view);
-        addView(view, getChildCount() - 1);
+        addView(view, childCount - 1);
     }
 
     private void setPrePage() {
